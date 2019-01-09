@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.Entity", "Pan,Domain\Pa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.API", "Pan.API\Pan.API.csproj", "{E105DD1F-1B67-439F-A4D3-AC1F0808ED55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.Test", "Pan.Test\Pan.Test.csproj", "{08DF693B-8FB7-49E4-B194-CF8B826395E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{E105DD1F-1B67-439F-A4D3-AC1F0808ED55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E105DD1F-1B67-439F-A4D3-AC1F0808ED55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E105DD1F-1B67-439F-A4D3-AC1F0808ED55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08DF693B-8FB7-49E4-B194-CF8B826395E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08DF693B-8FB7-49E4-B194-CF8B826395E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08DF693B-8FB7-49E4-B194-CF8B826395E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08DF693B-8FB7-49E4-B194-CF8B826395E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
