@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Pan.API.Filters;
-using System.Collections.Generic;
+using Pan.Code.Extentions;
 
 namespace Pan.API.Controllers
 {
@@ -12,17 +12,19 @@ namespace Pan.API.Controllers
         private readonly ILogger<ValuesController> _logger;
         public ValuesController(ILogger<ValuesController> logger)
         {
-            _logger = logger;
+            this._logger = logger;
         }
 
 
         // GET api/values
         [HttpGet]
         [LoginFilter]
-        public ActionResult<IEnumerable<string>> Get()
+        public ActionResult<object> Get()
         {
             _logger.LogInformation("ValuesController Get LogInformation");
-            return new string[] { "value1", "value2" };
+            var str = new string[] { "value1", "value2" };
+            return str.ResponseSuccess();
+            //return new string[] { "value1", "value2" };
         }
 
         // GET api/values/5

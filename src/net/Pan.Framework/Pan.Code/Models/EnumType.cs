@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Pan.Entity
+namespace Pan.Code
 {
     public class EnumType
     {
@@ -19,6 +19,11 @@ namespace Pan.Entity
             /// </summary>
             [Description("未知错误")]
             Unknown = 500,
+            /// <summary>
+            /// 请求数据错误
+            /// </summary>
+            [Description("请求数据错误")]
+            DataError = 501,
             /// <summary>
             /// 未登录
             /// </summary>

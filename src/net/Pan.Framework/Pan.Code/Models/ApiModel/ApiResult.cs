@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Pan.Entity.ApiModel
+namespace Pan.Code
 {
     /// <summary>
     /// API返回值基类
@@ -26,5 +26,9 @@ namespace Pan.Entity.ApiModel
         /// 返回的结果集
         /// </summary>
         public T Result { get; set; }
+        /// <summary>
+        /// 总数
+        /// </summary>
+        public int Total { get; set; }
     }
 }

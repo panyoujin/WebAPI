@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Pan.API.Extension;
-using Pan.API.Filters;
-using Pan.API.Middleware;
+using Pan.API.Extentions;
+using Pan.Code.Middleware;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace Pan.API
@@ -46,7 +45,7 @@ namespace Pan.API
                 app.UseHsts();
             }
 
-            app.UseMiddleware<ExceptionHandlerMiddleware>();
+            app.UseMiddleware<UserExceptionHandlerMiddleware>();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();

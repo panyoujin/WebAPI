@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace Pan.API.Extension
+namespace Pan.API.Extentions
 {
-    public static class DependencyExtension
+    public static class DependencyExtention
     {
         public static void RegisDependency(this IServiceCollection services)
         {

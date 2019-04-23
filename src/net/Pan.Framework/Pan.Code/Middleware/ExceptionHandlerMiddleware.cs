@@ -2,19 +2,20 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Pan.API.Middleware
+namespace Pan.Code.Middleware
 {
-    public class ExceptionHandlerMiddleware
+    /// <summary>
+    /// 用户自定义全局异常处理中间件
+    /// </summary>
+    public class UserExceptionHandlerMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger<ExceptionHandlerMiddleware> _logger;
+        private readonly ILogger<UserExceptionHandlerMiddleware> _logger;
 
-        public ExceptionHandlerMiddleware(RequestDelegate rd, ILogger<ExceptionHandlerMiddleware> logger)
+        public UserExceptionHandlerMiddleware(RequestDelegate rd, ILogger<UserExceptionHandlerMiddleware> logger)
         {
             _next = rd;
             _logger = logger;
@@ -28,7 +29,7 @@ namespace Pan.API.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError("ExceptionHandlerMiddleware", ex);
+                _logger.LogError("UserExceptionHandlerMiddleware", ex);
                 await HandleExceptionAsync(context, ex);
             }
         }

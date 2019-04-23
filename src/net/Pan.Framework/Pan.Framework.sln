@@ -9,9 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.Repository", "Pan.Repos
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Pan.Domain", "Pan.Domain", "{08ABB561-2C27-4B0B-B0DD-A17D07C1B905}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.IRepository", "Pan,Domain\Pan.IRepository\Pan.IRepository.csproj", "{E89AFB2B-D151-450F-9417-4A750A2FF925}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.IRepository", "Pan.Domain\Pan.IRepository\Pan.IRepository.csproj", "{E89AFB2B-D151-450F-9417-4A750A2FF925}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.Entity", "Pan,Domain\Pan.Entity\Pan.Entity.csproj", "{1273EA87-FAFA-479D-AE25-094F7CC00096}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.Entity", "Pan.Domain\Pan.Entity\Pan.Entity.csproj", "{1273EA87-FAFA-479D-AE25-094F7CC00096}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pan.API", "Pan.API\Pan.API.csproj", "{E105DD1F-1B67-439F-A4D3-AC1F0808ED55}"
 EndProject
