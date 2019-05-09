@@ -571,9 +571,9 @@ namespace DatabaseToCalss
         private string ToLaunchSettings(string ns)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("{\"iisSettings\":{\"windowsAuthentication\":false,\"anonymousAuthentication\":true,\"iisExpress\":{\"applicationUrl\":\"http://localhost:60737\",\"sslPort\":44368}},\"$schema\":\"http://json.schemastore.org/launchsettings.json\",\"profiles\":{\"IIS Express\":{\"commandName\":\"IISExpress\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"}},\"");
+            sb.Append("{\"iisSettings\":{\"windowsAuthentication\":false,\"anonymousAuthentication\":true,\"iisExpress\":{\"applicationUrl\":\"http://localhost:60737\"}},\"$schema\":\"http://json.schemastore.org/launchsettings.json\",\"profiles\":{\"IIS Express\":{\"commandName\":\"IISExpress\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"}},\"");
             sb.Append(ns);
-            sb.Append(".API\":{\"commandName\":\"Project\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"},\"applicationUrl\":\"https://localhost:5001;http://localhost:5000\"},\"Docker\":{\"commandName\":\"Docker\",\"launchBrowser\":true,\"launchUrl\":\"{Scheme}://{ServiceHost}:{ServicePort}/api/values\"}}}\n");
+            sb.Append(".API\":{\"commandName\":\"Project\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"},\"applicationUrl\":\"http://localhost:5000\"},\"Docker\":{\"commandName\":\"Docker\",\"launchBrowser\":true,\"launchUrl\":\"{Scheme}://{ServiceHost}:{ServicePort}/api/values\"}}}\n");
             var path = string.Format("{0}/{1}/{1}.API/Properties/launchSettings.json", BasePath, ns);
             WriteFile(path, sb.ToString());
             return sb.ToString();
@@ -600,7 +600,7 @@ namespace DatabaseToCalss
             sb.Append("    {\n");
             sb.Append("        public static void Main(string[] args)\n");
             sb.Append("        {\n");
-            sb.AppendFormat("            SQLHelperFactory.Instance.ConnectionStringsDic[\"backstage_connection\"]=\"{0}\";\n", SQLHelperFactory.Instance.ConnectionStringsDic["backstage_connection"]);
+            //sb.AppendFormat("            SQLHelperFactory.Instance.ConnectionStringsDic[\"backstage_connection\"]=\"{0}\";\n", SQLHelperFactory.Instance.ConnectionStringsDic["backstage_connection"]);
             sb.Append("            var logger = NLogBuilder.ConfigureNLog(\"nlog.config\").GetCurrentClassLogger();\n");
             sb.Append("            logger.Info(\"Init Log API Information\");\n");
             sb.Append("            CreateWebHostBuilder(args).Build().Run();\n");
@@ -648,6 +648,11 @@ namespace DatabaseToCalss
             sb.Append("\n");
             sb.Append("        public void ConfigureServices(IServiceCollection services)\n");
             sb.Append("        {\n");
+            sb.Append("            var Connections = Configuration.GetConnectionString(\"Connections\") ?? \"\";\n");
+            sb.Append("            foreach (var con in Connections.Split(','))\n");
+            sb.Append("            {\n");
+            sb.Append("                DBHelper.SQLHelper.SQLHelperFactory.Instance.ConnectionStringsDic[con] = Configuration.GetConnectionString(con);\n");
+            sb.Append("            }\n");
             sb.Append("            services.AddMvc(config =>{}).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);\n");
             sb.Append("            services.RegisDependency();\n");
             sb.Append("            services.AddSwaggerGen(c =>{c.SwaggerDoc(\"v1\", new Info { Title = \"My API\", Version = \"v1\" });});\n");
