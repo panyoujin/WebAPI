@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<SqlSetting>
+
+  <Data name="GetDBList">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+      SELECT t.`TABLE_SCHEMA` FROM `information_schema`.`TABLES` t GROUP BY t.`TABLE_SCHEMA`;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  <Data name="GetTableList">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+      SELECT t.`TABLE_NAME` AS  table_name
+      FROM `information_schema`.`TABLES` t
+      WHERE t.`TABLE_SCHEMA`=@@DBName@@ <%= AND t.`TABLE_NAME` = @@TableName@@%>;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+
+  <Data name="GetTableColumnList">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+      SELECT c.`COLUMN_NAME` AS column_name,c.`COLUMN_COMMENT` AS column_comment,c.`ORDINAL_POSITION` AS ordinal_position,c.`COLUMN_KEY` AS column_key,c.`COLUMN_TYPE` AS column_type,c.`DATA_TYPE` AS data_type
+      FROM `information_schema`.`COLUMNS` c
+      WHERE c.`TABLE_SCHEMA`=@@DBName@@ AND c.`TABLE_NAME` = @@TableName@@ 
+      ORDER BY c.`ORDINAL_POSITION`;
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+
+  <Data name="CreateInsertTrigger">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+DELIMITER $$
+
+USE Restaurant$$
+
+DROP TRIGGER /*!50032 IF EXISTS */ `trigger_<R%=@@TableName@@%R>_insert_after`$$
+
+CREATE
+    TRIGGER `trigger_<R%=@@TableName@@%R>_insert_after` AFTER INSERT ON <R%=@@TableName@@%R> 
+    FOR EACH ROW BEGIN
+      CALL `insert_sys_log`('<R%=@@TableName@@%R>',new.<R%=@@Primary_Key@@%R>,'I',''
+      ,CONCAT(<R%=@@New_Content@@%R>)
+      ,CONCAT('新增:',new.<R%=@@Primary_Key@@%R>),new.CreateUser,0);
+    END;
+$$
+
+DELIMITER ;
+
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  <Data name="CreateUpdateTrigger">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+DELIMITER $$
+
+USE Restaurant$$
+
+DROP TRIGGER /*!50032 IF EXISTS */ `trigger_<R%=@@TableName@@%R>_update_after`$$
+
+CREATE
+    TRIGGER `trigger_<R%=@@TableName@@%R>_update_after` AFTER UPDATE ON <R%=@@TableName@@%R> 
+    FOR EACH ROW BEGIN
+      CALL `insert_sys_log`('<R%=@@TableName@@%R>',new.<R%=@@Primary_Key@@%R>,'U'
+      ,CONCAT(<R%=@@Old_Content@@%R>)
+      ,CONCAT(<R%=@@New_Content@@%R>)
+      ,CONCAT('修改:',new.<R%=@@Primary_Key@@%R>),new.UpdateUser,0);
+    END;
+$$
+
+DELIMITER ;
+
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  
+  <Data name="CreateDeleteTrigger">
+    <SqlDefinition type="MySql" ConnStringName="db_connection">
+      <SqlCommand>
+        <![CDATA[
+DELIMITER $$
+
+USE Restaurant$$
+
+DROP TRIGGER /*!50032 IF EXISTS */ `trigger_<R%=@@TableName@@%R>_delete_after`$$
+
+CREATE
+    TRIGGER `trigger_<R%=@@TableName@@%R>_delete_after` AFTER DELETE ON <R%=@@TableName@@%R> 
+    FOR EACH ROW BEGIN
+      CALL `insert_sys_log`('<R%=@@TableName@@%R>',old.<R%=@@Primary_Key@@%R>,'D'
+      ,CONCAT(<R%=@@Old_Content@@%R>)
+      ,''
+      ,CONCAT('删除:',old.<R%=@@Primary_Key@@%R>),old.UpdateUser,0);
+    END;
+$$
+
+DELIMITER ;
+
+      ]]>
+      </SqlCommand>
+    </SqlDefinition>
+  </Data>
+  
+</SqlSetting>
