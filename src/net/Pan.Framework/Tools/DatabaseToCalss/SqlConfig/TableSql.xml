@@ -26,7 +26,7 @@
     <SqlDefinition type="MySql" ConnStringName="db_connection">
       <SqlCommand>
         <![CDATA[
-      SELECT c.`COLUMN_NAME` AS column_name,c.`COLUMN_COMMENT` AS column_comment,c.`ORDINAL_POSITION` AS ordinal_position,c.`COLUMN_KEY` AS column_key,c.`COLUMN_TYPE` AS column_type,c.`DATA_TYPE` AS data_type
+      SELECT c.`COLUMN_NAME` AS column_name,c.`COLUMN_COMMENT` AS column_comment,c.`ORDINAL_POSITION` AS ordinal_position,c.`COLUMN_KEY` AS column_key,c.`COLUMN_TYPE` AS column_type,c.`DATA_TYPE` AS data_type,c.`IS_NULLABLE` AS is_nullable,c.`COLUMN_DEFAULT` AS column_default,c.`CHARACTER_MAXIMUM_LENGTH` AS character_maximum_length
       FROM `information_schema`.`COLUMNS` c
       WHERE c.`TABLE_SCHEMA`=@@DBName@@ AND c.`TABLE_NAME` = @@TableName@@ 
       ORDER BY c.`ORDINAL_POSITION`;

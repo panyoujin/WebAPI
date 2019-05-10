@@ -15,6 +15,18 @@ namespace DatabaseToCalss
         /// 
         /// </summary>
         public string data_type { get; set; }
-        
+        /// <summary>
+        /// 
+        /// </summary>
+        public string is_nullable { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string column_default { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public int? character_maximum_length { get; set; }
+
     }
 }

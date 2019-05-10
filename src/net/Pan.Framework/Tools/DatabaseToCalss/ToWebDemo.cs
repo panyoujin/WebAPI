@@ -360,7 +360,7 @@ namespace DatabaseToCalss
             sb.Append("        /// <summary>\n");
             sb.Append("        [HttpGet]\n");
             sb.AppendFormat("        [ProducesResponseType(200, Type = typeof(ApiResult<{0}_Entity>))]\n", name);
-            sb.AppendFormat("        public ActionResult<object> Get({0} {1})\n", ConvrtType(list.FirstOrDefault().data_type), f_c);
+            sb.AppendFormat("        public ActionResult<object> Get({0} {1})\n", ConvrtType(list.FirstOrDefault().data_type, list.FirstOrDefault().is_nullable), f_c);
             sb.Append("        {\n");
             sb.AppendFormat("            {0}_Entity model = new {0}_Entity();\n", name);
             sb.AppendFormat("            model.{0} = {0};\n", f_c);
@@ -475,8 +475,10 @@ namespace DatabaseToCalss
             StringBuilder sb = new StringBuilder();
             var namelist = list.Select(s => s.column_name);
             var insertvaluselist = list.Select(s => "@@" + s.column_name + "@@");
-            var setlist = list.Select(s => s.column_name + "=@@" + s.column_name + "@@");
-            var wherelist = list.Select(s => s.column_name + "=@@" + s.column_name + "@@");
+            var setlist = list.Select(s => "<%=," + s.column_name + "=@@" + s.column_name + "@@%>").ToList();
+            setlist.RemoveAt(0);
+            var wherelist = list.Select(s => "<%= AND " + s.column_name + "=@@" + s.column_name + "@@%>");
+            var firstWherelist = list.Select(s => s.column_name + "=@@" + s.column_name + "@@%").FirstOrDefault();
             sb.Append("<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n");
             sb.Append("<SqlSetting>\n");
             #region Insert
@@ -496,7 +498,7 @@ namespace DatabaseToCalss
             sb.Append("        <SqlDefinition type=\"MySql\" ConnStringName=\"backstage_connection\">\n");
             sb.Append("            <SqlCommand>\n");
             sb.Append("                <![CDATA[\n");
-            sb.AppendFormat("                UPDATE {0} SET {1} WHERE {2};\n", name, string.Join(",", setlist), setlist.FirstOrDefault());
+            sb.AppendFormat("                UPDATE {0} SET {1} {2} WHERE {3};\n", name, firstWherelist, string.Join(",", setlist), firstWherelist);
             sb.Append("                ]]>\n");
             sb.Append("            </SqlCommand>\n");
             sb.Append("        </SqlDefinition>\n");
@@ -508,7 +510,7 @@ namespace DatabaseToCalss
             sb.Append("        <SqlDefinition type=\"MySql\" ConnStringName=\"backstage_connection\">\n");
             sb.Append("            <SqlCommand>\n");
             sb.Append("                <![CDATA[\n");
-            sb.AppendFormat("                DELETE FROM {0} WHERE {1};\n", name, wherelist.FirstOrDefault());
+            sb.AppendFormat("                DELETE FROM {0} WHERE {1};\n", name, firstWherelist);
             sb.Append("                ]]>\n");
             sb.Append("            </SqlCommand>\n");
             sb.Append("        </SqlDefinition>\n");
@@ -520,7 +522,7 @@ namespace DatabaseToCalss
             sb.Append("        <SqlDefinition type=\"MySql\" ConnStringName=\"backstage_connection\">\n");
             sb.Append("            <SqlCommand>\n");
             sb.Append("                <![CDATA[\n");
-            sb.AppendFormat("                SELECT {0} FROM {1} WHERE {2};\n", string.Join(",", namelist), name, wherelist.FirstOrDefault());
+            sb.AppendFormat("                SELECT {0} FROM {1} WHERE 1=1 {2};\n", string.Join(",", namelist), name, string.Join(" ", wherelist));
             sb.Append("                ]]>\n");
             sb.Append("            </SqlCommand>\n");
             sb.Append("        </SqlDefinition>\n");
@@ -532,8 +534,8 @@ namespace DatabaseToCalss
             sb.Append("        <SqlDefinition type=\"MySql\" ConnStringName=\"backstage_connection\">\n");
             sb.Append("            <SqlCommand>\n");
             sb.Append("                <![CDATA[\n");
-            sb.AppendFormat("                SELECT COUNT(0) AS row_count FROM {0} WHERE {1};\n", name, string.Join(",", wherelist));
-            sb.AppendFormat("                SELECT {0} FROM {1} WHERE {2} LIMIT <R%= @@StartIndex@@, @@SelectCount@@ %R> ;\n", string.Join(",", namelist), name, string.Join(",", wherelist));
+            sb.AppendFormat("                SELECT {0} FROM {1} WHERE 1=1 {2} LIMIT <R%= @@StartIndex@@, @@SelectCount@@ %R> ;\n", string.Join(",", namelist), name, string.Join(" ", wherelist));
+            sb.AppendFormat("                SELECT COUNT(0) AS row_count FROM {0} WHERE 1=1 {1};\n", name, string.Join(" ", wherelist));
             sb.Append("                ]]>\n");
             sb.Append("            </SqlCommand>\n");
             sb.Append("        </SqlDefinition>\n");
@@ -553,7 +555,7 @@ namespace DatabaseToCalss
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("{\"ConnectionStrings\": {\"Connections\":\"backstage_connection\",\"backstage_connection\":\"");
-            sb.Append(SQLHelperFactory.Instance.ConnectionStringsDic["backstage_connection"]) ;
+            sb.Append(SQLHelperFactory.Instance.ConnectionStringsDic["backstage_connection"]);
             sb.Append("\"},\"Logging\":{\"LogLevel\":{\"Default\":\"Information\",\"Microsoft\":\"Warning\",\"System\":\"Warning\"}},\"AllowedHosts\":\"*\"}\n");
             var path = string.Format("{0}/{1}/{1}.API/appsettings.json", BasePath, ns);
             WriteFile(path, sb.ToString());
@@ -752,7 +754,7 @@ namespace DatabaseToCalss
                 sb.Append("        /// <summary>\n");
                 sb.AppendFormat("        /// {0}\n", item.column_comment);
                 sb.Append("        /// <summary>\n");
-                sb.AppendFormat("        public {0} {1} {2}\n", ConvrtType(item.data_type), item.column_name, "{ get; set; }");
+                sb.AppendFormat("        public {0} {1} {2}\n", ConvrtType(item.data_type, item.is_nullable), item.column_name, "{ get; set; }");
 
                 sb.Append("\n");
             }
@@ -868,8 +870,24 @@ namespace DatabaseToCalss
             dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
             foreach (var item in list)
             {
-                dicsb.AppendFormat("            dic[\"{0}\"] = model.{0};\n", item.column_name);
+                var type = ConvrtType(item.data_type, item.is_nullable);
+                if (type == "int" || type == "decimal" || type == "tinyint" || type == "smallint" || type == "float" || type == "double")
+                {
+                    dicsb.AppendFormat("            if(model.{0} != 0)\n", item.column_name);
+                }
+                else if (type.IndexOf("?") > 0)
+                {
+                    dicsb.AppendFormat("            if(model.{0} != null && model.{0}.HasValue)\n", item.column_name);
+                }
+                else
+                {
+                    dicsb.AppendFormat("            if(model.{0} != null)\n", item.column_name);
+                }
+                dicsb.Append("            {\n");
+                dicsb.AppendFormat("                dic[\"{0}\"] = model.{0};\n", item.column_name);
+                dicsb.Append("            }\n");
             }
+
             sb.Append("using System;\n");
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("using DBHelper.SQLHelper;\n");
@@ -932,6 +950,8 @@ namespace DatabaseToCalss
             sb.AppendFormat("        public (IEnumerable<{0}_Entity>,int) GetList({0}_Entity model,int pageindex,int pagesize)\n", name);
             sb.Append("        {\n");
             sb.Append(dicsb);
+            sb.Append("            dic[\"StartIndex\"] = pageindex == 0 ? 0 : pageindex * pagesize + 1;\n");
+            sb.Append("            dic[\"SelectCount\"] = pagesize;\n");
             sb.AppendFormat("            var list = SQLHelperFactory.Instance.QueryMultipleByPage<{0}_Entity>(\"Select_{0}_List\", dic,out int total);\n", name);
             sb.Append("            return (list,total);\n");
             sb.Append("        }\n\n");
@@ -992,9 +1012,13 @@ namespace DatabaseToCalss
             f2.Dispose();
         }
 
-        private string ConvrtType(string db_type)
+        private string ConvrtType(string db_type, string isNull)
         {
-
+            var str = "";
+            if (isNull == "YES")
+            {
+                str = "?";
+            }
             switch (db_type)
             {
                 case "char":
@@ -1003,20 +1027,20 @@ namespace DatabaseToCalss
                     return "string";
                 case "date":
                 case "datetime":
-                    return "DateTime";
+                    return "DateTime" + str;
                 case "decimal":
-                    return "decimal";
+                    return "decimal" + str;
                 case "int":
                 case "tinyint":
-                    return "int";
+                    return "int" + str;
                 case "smallint":
-                    return "short";
+                    return "short" + str;
                 case "float":
-                    return "float";
+                    return "float" + str;
                 case "double":
-                    return "double";
+                    return "double" + str;
                 case "bit":
-                    return "bool";
+                    return "bool" + str;
                 default:
                     return "string";
             }
