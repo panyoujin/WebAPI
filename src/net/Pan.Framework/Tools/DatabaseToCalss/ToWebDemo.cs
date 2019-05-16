@@ -13,8 +13,12 @@ namespace DatabaseToCalss
         string BasePath = "D:/ToDemo";
         string TargetFramework = "netcoreapp2.2";
         string LangVersion = "7.3";
-        string PanCodeVersion = "1.0.0";
+        string PanCodeVersion = "1.0.1";
         string CoreDBHelperVersion = "1.0.2";
+
+        List<string> udList = new List<string>() { "Update_Time", "Update_UserId", "Update_User" };
+        List<string> crList = new List<string>() { "Create_Time", "Create_UserId", "Create_User" };
+
         StringBuilder GetCsprojectStart()
         {
             StringBuilder sb = new StringBuilder();
@@ -48,10 +52,12 @@ namespace DatabaseToCalss
                 ToRepository(ns, name, list);
                 ToControllers(ns, name, list);
                 ToSql(ns, name, list);
+                ToViewModels(ns, name, list);
             }
             ToValuesController(ns);
             ToDockerfile(ns);
             ToLoginFilter(ns);
+            ToAuthTokenFilter(ns);
             ToDependencyExtention(ns, names);
             ToAppsettings(ns);
             ToNLog(ns);
@@ -63,6 +69,7 @@ namespace DatabaseToCalss
             ToIRepositoryCsproject(ns);
             ToRepositoryCsproject(ns);
             ToAPICsproject(ns, names);
+            ToLoginViewModels(ns);
             ToFramework(ns);
             SetMessage?.Invoke("创建完成");
             var path = string.Format("{0}/{1}/", BasePath, ns);
@@ -252,6 +259,50 @@ namespace DatabaseToCalss
             return sb.ToString();
         }
 
+        private string ToAuthTokenFilter(string ns)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("using System.Collections.Generic;\n");
+            sb.Append("using System.Linq;\n");
+            sb.Append("using Microsoft.AspNetCore.Authorization;\n");
+            sb.Append("using Microsoft.AspNetCore.Mvc.Controllers;\n");
+            sb.Append("using Swashbuckle.AspNetCore.Swagger;\n");
+            sb.Append("using Swashbuckle.AspNetCore.SwaggerGen;\n");
+            sb.Append("\n");
+            sb.AppendFormat("namespace {0}.API.Filters\n", ns);
+            sb.Append(@"{
+    /// <summary>
+    /// 控制swagger中是否需要添加accesstoken验证 KEY:Authorization
+    /// </summary>
+    public class AddAuthTokenHeaderParameter : IOperationFilter
+    {
+        public void Apply(Operation operation, OperationFilterContext context)
+        {
+            if (operation.Parameters == null) operation.Parameters = new List<IParameter>();
+            var attrs = context.ApiDescription.ActionDescriptor.AttributeRouteInfo;
+            var descriptor = context.ApiDescription.ActionDescriptor as ControllerActionDescriptor;
+            if (descriptor != null)
+            {
+                var actionAttributes = descriptor.MethodInfo.GetCustomAttributes(inherit: true);
+                bool isAuthorize = actionAttributes.Any(a => a is AuthorizeAttribute);
+                operation.Parameters.Add(new NonBodyParameter()
+                {
+                  ");
+            sb.Append("                    Name = \"Authorization\",\n");
+            sb.Append("                    In = \"header\",//query header body path formData\n");
+            sb.Append("                    Type = \"string\",\n");
+            sb.Append("                    Required = isAuthorize //是否必选\n");
+            sb.Append(@"                });
+                }
+            }
+        }
+    }
+}");
+            sb.Append("\n");
+            var path = string.Format("{0}/{1}/{1}.API/Filters/AddAuthTokenHeaderParameter.cs", BasePath, ns);
+            WriteFile(path, sb.ToString());
+            return sb.ToString();
+        }
         #endregion
         #region Extention
         private string ToDependencyExtention(string ns, List<string> names)
@@ -284,15 +335,11 @@ namespace DatabaseToCalss
         }
         #endregion
         #region Controllers
+
         private string ToControllers(string ns, string name, List<sys_table_column_model> list)
         {
+            var firstColumn = list.FirstOrDefault();
             StringBuilder sb = new StringBuilder();
-            StringBuilder dicsb = new StringBuilder();
-            dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
-            foreach (var item in list)
-            {
-                dicsb.AppendFormat("            dic[\"{0}\"] = model.{0};\n", item.column_name);
-            }
             sb.Append("using System;\n");
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("using Microsoft.AspNetCore.Mvc;\n");
@@ -302,15 +349,23 @@ namespace DatabaseToCalss
             sb.AppendFormat("using {0}.API.Filters;\n", ns);
             sb.AppendFormat("using {0}.Entity;\n", ns);
             sb.AppendFormat("using {0}.IRepository;\n", ns);
+            sb.AppendFormat("using Microsoft.AspNetCore.Authorization;\n", ns);
+            sb.AppendFormat("using Hoshino.API.ViewModels;\n", ns);
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API.Controllers\n", ns);
             sb.Append("{\n");
+            sb.Append("    /// <summary>\n");
+            sb.AppendFormat("    /// {0}\n", name);
+            sb.Append("    /// </summary>\n");
             sb.Append("    [Route(\"api/[controller]/[action]\")]\n");
             sb.Append("    [ApiController]\n");
             sb.AppendFormat("    public class {0}Controller : ControllerBase\n", name);
             sb.Append("    {\n");
             sb.AppendFormat("        private readonly ILogger<{0}Controller> _logger;\n", name);
             sb.AppendFormat("        private readonly I{0}_Repository _repository;\n", name);
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 构造函数\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        public {0}Controller(ILogger<{0}Controller> logger,I{0}_Repository repository)\n", name);
             sb.Append("        {\n");
             sb.Append("            this._logger = logger;\n");
@@ -320,63 +375,68 @@ namespace DatabaseToCalss
             #region Insert
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 新增\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [Authorize]\n");
             sb.Append("        [HttpPost]\n");
             sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<bool>))]\n");
-            sb.AppendFormat("        public ActionResult<object> Post([FromBody]{0}_Entity model)\n", name);
+            sb.AppendFormat("        public ActionResult<object> Post([FromBody]{0}VM model)\n", name);
             sb.Append("        {\n");
-            sb.Append("            return this._repository.Insert(model).ResponseSuccess();\n");
+            sb.AppendFormat("            {0}_Entity entity = model.ConvertToT<{0}_Entity>();\n", name);
+            sb.Append("            return this._repository.Insert(entity).ResponseSuccess();\n");
             sb.Append("        }\n\n");
             #endregion Insert
 
             #region Update
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 修改\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [Authorize]\n");
             sb.Append("        [HttpPut]\n");
             sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<bool>))]\n");
-            sb.AppendFormat("        public ActionResult<object> Update([FromBody]{0}_Entity model)\n", name);
+            sb.AppendFormat("        public ActionResult<object> Update([FromBody]{0}VM model)\n", name);
             sb.Append("        {\n");
-            sb.Append("            return this._repository.Update(model).ResponseSuccess();\n");
+            sb.AppendFormat("            {0}_Entity entity = model.ConvertToT<{0}_Entity>();\n", name);
+            sb.Append("            return this._repository.Update(entity).ResponseSuccess();\n");
             sb.Append("        }\n\n");
             #endregion Update
 
             #region Delete
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 删除\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [Authorize]\n");
             sb.Append("        [HttpDelete]\n");
             sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<bool>))]\n");
-            sb.AppendFormat("        public ActionResult<object> Delete([FromBody]{0}_Entity model)\n", name);
+            sb.AppendFormat("        public ActionResult<object> Delete({0} {1})\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
-            sb.Append("            return this._repository.Delete(model).ResponseSuccess();\n");
+            sb.AppendFormat("            return this._repository.Delete({0}).ResponseSuccess();\n", firstColumn.column_name);
             sb.Append("        }\n\n");
             #endregion Delete
 
             #region Select
-            var f_c = list.FirstOrDefault().column_name;
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取单个\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [Authorize]\n");
             sb.Append("        [HttpGet]\n");
             sb.AppendFormat("        [ProducesResponseType(200, Type = typeof(ApiResult<{0}_Entity>))]\n", name);
-            sb.AppendFormat("        public ActionResult<object> Get({0} {1})\n", ConvrtType(list.FirstOrDefault().data_type, list.FirstOrDefault().is_nullable), f_c);
+            sb.AppendFormat("        public ActionResult<object> Get({0} {1})\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
-            sb.AppendFormat("            {0}_Entity model = new {0}_Entity();\n", name);
-            sb.AppendFormat("            model.{0} = {0};\n", f_c);
-            sb.Append("            return this._repository.Get(model).ResponseSuccess();\n");
+            sb.AppendFormat("            return this._repository.Get({0}).ResponseSuccess();\n", firstColumn.column_name);
             sb.Append("        }\n\n");
             #endregion Select
+
 
             #region SelectList
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
-            sb.Append("        /// <summary>\n");
-            sb.Append("        [HttpGet]\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [HttpPost]\n");
             sb.AppendFormat("        [ProducesResponseType(200, Type = typeof(ApiResult<List<{0}_Entity>>))]\n", name);
-            sb.AppendFormat("        public ActionResult<object> GetList([FromBody]{0}_Entity model,int pageindex,int pagesize)\n", name);
+            sb.AppendFormat("        public ActionResult<object> GetList([FromBody]{0}VM model,int pageindex,int pagesize)\n", name);
             sb.Append("        {\n");
-            sb.Append("            var (list,total) = this._repository.GetList(model, pageindex, pagesize) ;\n");
+            sb.AppendFormat("            {0}_Entity entity = model.ConvertToT<{0}_Entity>();\n", name);
+            sb.Append("            var (list,total) = this._repository.GetList(entity, pageindex, pagesize) ;\n");
             sb.Append("            return list.ResponseSuccess(\"\",total);\n");
             sb.Append("        }\n\n");
             #endregion SelectList
@@ -430,6 +490,34 @@ namespace DatabaseToCalss
             sb.Append("        public void Delete(int id)\n");
             sb.Append("        {\n");
             sb.Append("        }\n");
+            sb.Append("\n");
+
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 登录接口\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        [AllowAnonymous]\n");
+            sb.Append("        [HttpPost]\n");
+            sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<string>))]\n");
+            sb.Append("       public ActionResult<object> Login([FromBody]LoginModel model)\n");
+            sb.Append("        {\n");
+            sb.Append("            Object user = null;\n");
+            sb.Append("            //user = this._repository.GetUserByAccount(model.UserAccount);\n");
+            sb.Append("            //if (user == null || !model.Password.Equals(user.Password))\n");
+            sb.Append("            //{\n");
+            sb.Append("                //{model.ResponseNotLogin(\"登录失败\");\n");
+            sb.Append("            //}\n");
+
+            sb.Append("            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this._configuration[\"JWT: SecurityKey\"]));\n");
+            sb.Append("            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);\n");
+            sb.Append("            var claims = new[] {new Claim(ClaimTypes.Name,user.ToJson())};\n");
+            sb.Append("            var authTime = DateTime.UtcNow;\n");
+            sb.Append("            var expiresAt = authTime.AddDays(7);\n");
+            sb.Append("            var token = new JwtSecurityToken(issuer: \"*\", audience: \"*\", claims: claims, expires: expiresAt, signingCredentials: creds);\n");
+            sb.Append("            HttpContext.Session.SetString(token, user.ToJson());\n");
+            sb.Append("            return login.ResponseSuccess();\n");
+
+            sb.Append("        }\n");
+
             sb.Append("    }\n");
             sb.Append("}\n");
             var path = string.Format("{0}/{1}/{1}.API/Controllers/ValuesController.cs", BasePath, ns);
@@ -437,6 +525,81 @@ namespace DatabaseToCalss
             return sb.ToString();
         }
         #endregion
+
+        #region ViewModel
+
+        private string ToViewModels(string ns, string name, List<sys_table_column_model> list)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("using System;\n");
+            sb.Append("using System.ComponentModel.DataAnnotations;\n");
+            sb.Append("\n");
+            sb.AppendFormat("namespace {0}.API.ViewModels\n", ns);
+            sb.Append("{\n");
+            sb.Append("    /// <summary>\n");
+            sb.AppendFormat("    /// {0}\n", name);
+            sb.Append("    /// </summary>\n");
+            sb.AppendFormat("    public class {0}VM\n", name);
+            sb.Append("    {\n");
+            foreach (var item in list)
+            {
+                if (udList.Contains(item.column_name) || crList.Contains(item.column_name))
+                {
+                    continue;
+                }
+                sb.Append("        /// <summary>\n");
+
+                sb.AppendFormat("        /// {0}\n", item.column_comment);
+                sb.Append("        /// </summary>\n");
+                if (item.character_maximum_length.HasValue)
+                {
+                    sb.AppendFormat("        [MaxLength(length:{0},ErrorMessage =\"长度不能超过{0}字符\")]\n", item.character_maximum_length.Value);
+                }
+                sb.AppendFormat("        public {0} {1} {2}\n", ConvrtType(item.data_type, item.is_nullable), item.column_name, "{ get; set; }");
+
+                sb.Append("\n");
+            }
+            sb.Append("    }\n");
+            sb.Append("}");
+            var path = string.Format("{0}/{1}/{1}.API/ViewModels/{2}VM.cs", BasePath, ns, name);
+            WriteFile(path, sb.ToString());
+            return sb.ToString();
+        }
+        private string ToLoginViewModels(string ns)
+        {
+            string name = "Login";
+            StringBuilder sb = new StringBuilder();
+            sb.Append("using System;\n");
+            sb.Append("\n");
+            sb.AppendFormat("namespace {0}.API.ViewModels\n", ns);
+            sb.Append("{\n");
+            sb.AppendFormat("    public class {0}VM\n", name);
+            sb.Append("    {\n");
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 登录名\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        public string Account { get; set; }\n");
+
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 密码\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        public string Password { get; set; }\n");
+
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 验证码\n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        public string VerificationCode { get; set; }\n");
+
+            sb.Append("\n");
+
+            sb.Append("    }\n");
+            sb.Append("}");
+            var path = string.Format("{0}/{1}/{1}.API/ViewModels/{2}VM.cs", BasePath, ns, name);
+            WriteFile(path, sb.ToString());
+            return sb.ToString();
+        }
+
+        #endregion ViewModel
         #region Dockerfile
 
         private string ToDockerfile(string ns)
@@ -554,9 +717,11 @@ namespace DatabaseToCalss
         private string ToAppsettings(string ns)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("{\"ConnectionStrings\": {\"Connections\":\"backstage_connection\",\"backstage_connection\":\"");
+            sb.Append("{  \"ConnectionStrings\": {\n    \"Connections\":\"backstage_connection\",\n    \"backstage_connection\":\"");
             sb.Append(SQLHelperFactory.Instance.ConnectionStringsDic["backstage_connection"]);
-            sb.Append("\"},\"Logging\":{\"LogLevel\":{\"Default\":\"Information\",\"Microsoft\":\"Warning\",\"System\":\"Warning\"}},\"AllowedHosts\":\"*\"}\n");
+            sb.Append("  \"},\n  \"JWT\": {\n    \"SecurityKey\": \"");
+            sb.Append(Guid.NewGuid().ToString());
+            sb.Append("\"\n  },\n  \"Logging\":{\n    \"LogLevel\":{\n      \"Default\":\"Information\",\n      \"Microsoft\":\"Warning\",\n      \"System\":\"Warning\"\n    }\n  },\n  \"AllowedHosts\":\"*\"\n}\n");
             var path = string.Format("{0}/{1}/{1}.API/appsettings.json", BasePath, ns);
             WriteFile(path, sb.ToString());
             return sb.ToString();
@@ -625,6 +790,11 @@ namespace DatabaseToCalss
             return sb.ToString();
         }
 
+        /// <summary>
+        /// 启用jwt session 默认页
+        /// </summary>
+        /// <param name="ns"></param>
+        /// <returns></returns>
         private string ToStartup(string ns)
         {
             StringBuilder sb = new StringBuilder();
@@ -636,6 +806,12 @@ namespace DatabaseToCalss
             sb.AppendFormat("using {0}.API.Extentions;\n", ns);
             sb.Append("using Pan.Code.Middleware;\n");
             sb.Append("using Swashbuckle.AspNetCore.Swagger;\n");
+            sb.Append("using Newtonsoft.Json.Serialization;\n");
+            sb.Append("using System.IO;\n");
+            sb.Append("using Microsoft.AspNetCore.Authentication.JwtBearer;\n");
+            sb.Append("using Microsoft.IdentityModel.Tokens;\n");
+            sb.Append("using System.Text;\n");
+            sb.Append("using Hoshino.API.Filters;\n");
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API\n", ns);
             sb.Append("{\n");
@@ -655,9 +831,10 @@ namespace DatabaseToCalss
             sb.Append("            {\n");
             sb.Append("                DBHelper.SQLHelper.SQLHelperFactory.Instance.ConnectionStringsDic[con] = Configuration.GetConnectionString(con);\n");
             sb.Append("            }\n");
-            sb.Append("            services.AddMvc(config =>{}).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);\n");
+            sb.Append("            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)\n                .AddJwtBearer(options =>\n                {\n                    options.TokenValidationParameters = new TokenValidationParameters\n                    {\n                        ValidateIssuer = true,\n                        ValidateAudience = true,\n                        ValidateLifetime = true,\n                        ValidateIssuerSigningKey = true,\n                        ValidIssuer = \"*\",\n                        ValidAudience = \"*\",\n                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration[\"JWT:SecurityKey\"]))\n                    };\n                });\n");
+            sb.Append("            services.AddMvc(config =>{}).AddJsonOptions(options =>\n            {\n                options.SerializerSettings.ContractResolver = new DefaultContractResolver();//设置时间格式\n                 options.SerializerSettings.DateFormatString = \"yyyy-MM-dd HH:mm:ss\";\n            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);\n");
             sb.Append("            services.RegisDependency();\n");
-            sb.Append("            services.AddSwaggerGen(c =>{c.SwaggerDoc(\"v1\", new Info { Title = \"My API\", Version = \"v1\" });});\n");
+            sb.Append("            services.AddSwaggerGen(c =>{c.SwaggerDoc(\"v1\", new Info { Title = \"My API\", Version = \"v1\" });});\n                c.OperationFilter<AddAuthTokenHeaderParameter>();\n                // 为 Swagger JSON and UI设置xml文档注释路径\n                var basePath = Path.GetDirectoryName(typeof(Program).Assembly.Location);//获取应用程序所在目录（绝对，不受工作目录影响，建议采用此方法获取路径）\n                var xmlPath = Path.Combine(basePath, \"SwaggerDemo.xml\");\n                c.IncludeXmlComments(xmlPath);\n");
             sb.Append("        }\n");
             sb.Append("\n");
             sb.Append("        public void Configure(IApplicationBuilder app, IHostingEnvironment env)\n");
@@ -665,10 +842,16 @@ namespace DatabaseToCalss
             sb.Append("            if (env.IsDevelopment()){ app.UseDeveloperExceptionPage(); }\n");
             sb.Append("            else{ app.UseHsts(); }\n");
             sb.Append("            app.UseMiddleware<UserExceptionHandlerMiddleware>();\n");
+            sb.Append("            app.UseAuthentication();\n");
             sb.Append("            app.UseHttpsRedirection();\n");
+            sb.Append("            DefaultFilesOptions options = new DefaultFilesOptions();\n");
+            sb.Append("            options.DefaultFileNames.Add(\"index.html\");    //将index.html改为需要默认起始页的文件名.\n");
+            sb.Append("            app.UseDefaultFiles(options);\n");
             sb.Append("            app.UseStaticFiles();\n");
             sb.Append("            app.UseSwagger();\n");
             sb.Append("            app.UseSwaggerUI(c =>{ c.SwaggerEndpoint(\"/swagger/v1/swagger.json\", \"My API V1\"); });\n");
+            sb.Append("            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials());\n");
+            sb.Append("            app.UseSession();\n");
             sb.Append("            app.UseMvc();\n");
             sb.Append("        }\n");
             sb.Append("    }\n");
@@ -690,6 +873,12 @@ namespace DatabaseToCalss
             sb.AppendFormat("        <UserSecretsId>{0}</UserSecretsId>\n", Guid.NewGuid().ToString());
             sb.Append("    </PropertyGroup>\n");
 
+            sb.Append("    <PropertyGroup Condition=\"'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'\">\n");
+            sb.Append("        <DocumentationFile>bin\\Debug\\netcoreapp2.2\\SwaggerDemo.xml</DocumentationFile>\n");
+            sb.Append("        <NoWarn>1701;1702:1591</NoWarn>\n");
+            sb.Append("    </PropertyGroup>\n");
+
+
             sb.Append("    <ItemGroup>\n");
             sb.Append("        <PackageReference Include=\"Microsoft.AspNetCore.App\" />\n");
             sb.Append("        <PackageReference Include=\"Microsoft.AspNetCore.Razor.Design\" Version=\"2.2.0\" PrivateAssets=\"All\" />\n");
@@ -698,7 +887,7 @@ namespace DatabaseToCalss
             sb.Append("        <PackageReference Include=\"NLog.Mongo\" Version=\"4.6.0.68\" />\n");
             sb.Append("        <PackageReference Include=\"NLog.Web.AspNetCore\" Version=\"4.7.1\" />\n");
             sb.Append("        <PackageReference Include=\"Swashbuckle.AspNetCore\" Version=\"4.0.1\" />\n");
-            sb.Append("        <PackageReference Include=\"Pan.Code\" Version=\"1.0.0\" />\n");
+            sb.AppendFormat("        <PackageReference Include=\"Pan.Code\" Version=\"{0}\" />\n", PanCodeVersion);
             sb.Append("    </ItemGroup>\n");
 
             sb.Append("    <ItemGroup>\n");
@@ -753,7 +942,7 @@ namespace DatabaseToCalss
             {
                 sb.Append("        /// <summary>\n");
                 sb.AppendFormat("        /// {0}\n", item.column_comment);
-                sb.Append("        /// <summary>\n");
+                sb.Append("        /// </summary>\n");
                 sb.AppendFormat("        public {0} {1} {2}\n", ConvrtType(item.data_type, item.is_nullable), item.column_name, "{ get; set; }");
 
                 sb.Append("\n");
@@ -771,7 +960,7 @@ namespace DatabaseToCalss
 
             #region PackageReference
             sb.Append("    <ItemGroup>\n");
-            sb.Append("        <PackageReference Include=\"Pan.Code\" Version=\"1.0.0\" />\n");
+            sb.AppendFormat("        <PackageReference Include=\"Pan.Code\" Version=\"{0}\" />\n", PanCodeVersion);
             sb.Append("    </ItemGroup>\n");
             #endregion PackageReference
 
@@ -786,6 +975,7 @@ namespace DatabaseToCalss
 
         private string ToIRepository(string ns, string name, List<sys_table_column_model> list)
         {
+            var firstColumn = list.FirstOrDefault();
             StringBuilder sb = new StringBuilder();
             sb.Append("using System;\n");
             sb.Append("using System.Collections.Generic;\n");
@@ -799,7 +989,7 @@ namespace DatabaseToCalss
             #region Insert
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 新增\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        bool Insert({0}_Entity model);\n", name);
             sb.Append("\n");
             #endregion Insert
@@ -807,7 +997,7 @@ namespace DatabaseToCalss
             #region Update
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 修改\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        bool Update({0}_Entity model);\n", name);
             sb.Append("\n");
             #endregion Update
@@ -815,23 +1005,23 @@ namespace DatabaseToCalss
             #region Delete
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 删除\n");
-            sb.Append("        /// <summary>\n");
-            sb.AppendFormat("        bool Delete({0}_Entity model);\n", name);
+            sb.Append("        /// </summary>\n");
+            sb.AppendFormat("        bool Delete({0} {1});\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("\n");
             #endregion Delete
 
             #region Select
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取单个\n");
-            sb.Append("        /// <summary>\n");
-            sb.AppendFormat("        {0}_Entity Get({0}_Entity model);\n", name);
+            sb.Append("        /// </summary>\n");
+            sb.AppendFormat("        {0}_Entity Get({1} {2});\n", name, ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("\n");
             #endregion Select
 
             #region SelectList
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        (IEnumerable<{0}_Entity>,int) GetList({0}_Entity model,int pageindex,int pagesize);\n", name);
             sb.Append("\n");
             #endregion SelectList
@@ -865,27 +1055,82 @@ namespace DatabaseToCalss
         #region Repository
         private string ToRepository(string ns, string name, List<sys_table_column_model> list)
         {
+            var firstColumn = list.FirstOrDefault();
             StringBuilder sb = new StringBuilder();
-            StringBuilder dicsb = new StringBuilder();
-            dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
+            StringBuilder insert_dicsb = new StringBuilder();
+            insert_dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
             foreach (var item in list)
             {
+                if (udList.Contains(item.column_name))
+                {
+                    continue;
+                }
                 var type = ConvrtType(item.data_type, item.is_nullable);
                 if (type == "int" || type == "decimal" || type == "tinyint" || type == "smallint" || type == "float" || type == "double")
                 {
-                    dicsb.AppendFormat("            if(model.{0} != 0)\n", item.column_name);
+                    insert_dicsb.AppendFormat("            if(model.{0} != 0)\n", item.column_name);
                 }
                 else if (type.IndexOf("?") > 0)
                 {
-                    dicsb.AppendFormat("            if(model.{0} != null && model.{0}.HasValue)\n", item.column_name);
+                    insert_dicsb.AppendFormat("            if(model.{0} != null && model.{0}.HasValue)\n", item.column_name);
                 }
                 else
                 {
-                    dicsb.AppendFormat("            if(model.{0} != null)\n", item.column_name);
+                    insert_dicsb.AppendFormat("            if(model.{0} != null)\n", item.column_name);
                 }
-                dicsb.Append("            {\n");
-                dicsb.AppendFormat("                dic[\"{0}\"] = model.{0};\n", item.column_name);
-                dicsb.Append("            }\n");
+                insert_dicsb.Append("            {\n");
+                insert_dicsb.AppendFormat("                dic[\"{0}\"] = model.{0};\n", item.column_name);
+                insert_dicsb.Append("            }\n");
+            }
+            StringBuilder update_dicsb = new StringBuilder();
+            update_dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
+            foreach (var item in list)
+            {
+                if (crList.Contains(item.column_name))
+                {
+                    continue;
+                }
+                var type = ConvrtType(item.data_type, item.is_nullable);
+                if (type == "int" || type == "decimal" || type == "tinyint" || type == "smallint" || type == "float" || type == "double")
+                {
+                    update_dicsb.AppendFormat("            if(model.{0} != 0)\n", item.column_name);
+                }
+                else if (type.IndexOf("?") > 0)
+                {
+                    update_dicsb.AppendFormat("            if(model.{0} != null && model.{0}.HasValue)\n", item.column_name);
+                }
+                else
+                {
+                    update_dicsb.AppendFormat("            if(model.{0} != null)\n", item.column_name);
+                }
+                update_dicsb.Append("            {\n");
+                update_dicsb.AppendFormat("                dic[\"{0}\"] = model.{0};\n", item.column_name);
+                update_dicsb.Append("            }\n");
+            }
+            StringBuilder list_dicsb = new StringBuilder();
+            list_dicsb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
+            foreach (var item in list)
+            {
+                if (crList.Contains(item.column_name) || udList.Contains(item.column_name))
+                {
+                    continue;
+                }
+                var type = ConvrtType(item.data_type, item.is_nullable);
+                if (type == "int" || type == "decimal" || type == "tinyint" || type == "smallint" || type == "float" || type == "double")
+                {
+                    list_dicsb.AppendFormat("            if(model.{0} != 0)\n", item.column_name);
+                }
+                else if (type.IndexOf("?") > 0)
+                {
+                    list_dicsb.AppendFormat("            if(model.{0} != null && model.{0}.HasValue)\n", item.column_name);
+                }
+                else
+                {
+                    list_dicsb.AppendFormat("            if(model.{0} != null)\n", item.column_name);
+                }
+                list_dicsb.Append("            {\n");
+                list_dicsb.AppendFormat("                dic[\"{0}\"] = model.{0};\n", item.column_name);
+                list_dicsb.Append("            }\n");
             }
 
             sb.Append("using System;\n");
@@ -902,10 +1147,10 @@ namespace DatabaseToCalss
             #region Insert
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 新增\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        public bool Insert({0}_Entity model)\n", name);
             sb.Append("        {\n");
-            sb.Append(dicsb);
+            sb.Append(insert_dicsb);
             sb.AppendFormat("            return SQLHelperFactory.Instance.ExecuteNonQuery(\"Insert_{0}\", dic) >0 ;\n", name);
             sb.Append("        }\n\n");
             #endregion Insert
@@ -913,10 +1158,10 @@ namespace DatabaseToCalss
             #region Update
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 修改\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        public bool Update({0}_Entity model)\n", name);
             sb.Append("        {\n");
-            sb.Append(dicsb);
+            sb.Append(update_dicsb);
             sb.AppendFormat("            return SQLHelperFactory.Instance.ExecuteNonQuery(\"Update_{0}\", dic) >0 ;\n", name);
             sb.Append("        }\n\n");
             #endregion Update
@@ -924,10 +1169,11 @@ namespace DatabaseToCalss
             #region Delete
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 删除\n");
-            sb.Append("        /// <summary>\n");
-            sb.AppendFormat("        public bool Delete({0}_Entity model)\n", name);
+            sb.Append("        /// </summary>\n");
+            sb.AppendFormat("        public bool Delete({0} {1})\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
-            sb.Append(dicsb);
+            sb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
+            sb.AppendFormat("            dic[\"{0}\"] = {0};\n", firstColumn.column_name);
             sb.AppendFormat("            return SQLHelperFactory.Instance.ExecuteNonQuery(\"Delete_{0}\", dic) >0 ;\n", name);
             sb.Append("        }\n\n");
             #endregion Delete
@@ -935,10 +1181,11 @@ namespace DatabaseToCalss
             #region Select
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取单个\n");
-            sb.Append("        /// <summary>\n");
-            sb.AppendFormat("        public {0}_Entity Get({0}_Entity model)\n", name);
+            sb.Append("        /// </summary>\n");
+            sb.AppendFormat("        public {0}_Entity Get({1} {2})\n", name, ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
-            sb.Append(dicsb);
+            sb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
+            sb.AppendFormat("            dic[\"{0}\"] = {0};\n", firstColumn.column_name);
             sb.AppendFormat("            return SQLHelperFactory.Instance.QueryForObjectByT<{0}_Entity>(\"Select_{0}\", dic);\n", name);
             sb.Append("        }\n\n");
             #endregion Select
@@ -946,12 +1193,18 @@ namespace DatabaseToCalss
             #region SelectList
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
-            sb.Append("        /// <summary>\n");
+            sb.Append("        /// </summary>\n");
             sb.AppendFormat("        public (IEnumerable<{0}_Entity>,int) GetList({0}_Entity model,int pageindex,int pagesize)\n", name);
             sb.Append("        {\n");
-            sb.Append(dicsb);
-            sb.Append("            dic[\"StartIndex\"] = pageindex == 0 ? 0 : pageindex * pagesize + 1;\n");
-            sb.Append("            dic[\"SelectCount\"] = pagesize;\n");
+            sb.Append(list_dicsb);
+            sb.Append("            if (pageindex >= 0)\n");
+            sb.Append("            {\n");
+            sb.Append("                dic[\"StartIndex\"] = pageindex == 0 ? 0 : (pageindex - 1) * pagesize + 1;;\n");
+            sb.Append("            }\n");
+            sb.Append("            if (pagesize > 0)\n");
+            sb.Append("            {\n");
+            sb.Append("                dic[\"SelectCount\"] = pagesize;\n");
+            sb.Append("            }\n");
             sb.AppendFormat("            var list = SQLHelperFactory.Instance.QueryMultipleByPage<{0}_Entity>(\"Select_{0}_List\", dic,out int total);\n", name);
             sb.Append("            return (list,total);\n");
             sb.Append("        }\n\n");

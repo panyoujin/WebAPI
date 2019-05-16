@@ -17,6 +17,16 @@ namespace Pan.Code.Extentions
         {
             return JsonConvert.DeserializeObject<T>(str);
         }
-        
+
+        /// <summary>
+        /// 轉換類型
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static T ConvertToT<T>(this object obj)
+        {
+            return obj.ToJson().ToModel<T>();
+        }
     }
 }
