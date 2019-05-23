@@ -14,7 +14,7 @@ namespace DatabaseToCalss
         string TargetFramework = "netcoreapp2.2";
         string LangVersion = "7.3";
         string PanCodeVersion = "1.0.1";
-        string CoreDBHelperVersion = "1.0.2";
+        string CoreDBHelperVersion = "1.0.3";
 
         List<string> udList = new List<string>() { "Update_Time", "Update_UserId", "Update_User" };
         List<string> crList = new List<string>() { "Create_Time", "Create_UserId", "Create_User" };
@@ -59,12 +59,13 @@ namespace DatabaseToCalss
             ToLoginFilter(ns);
             ToAuthTokenFilter(ns);
             ToDependencyExtention(ns, names);
+            ToRequesrExtention(ns, names);
             ToAppsettings(ns);
             ToNLog(ns);
             ToLaunchSettings(ns);
             ToProgram(ns);
             ToStartup(ns);
-
+            ToConstant(ns);
             ToEntityCsproject(ns);
             ToIRepositoryCsproject(ns);
             ToRepositoryCsproject(ns);
@@ -333,6 +334,49 @@ namespace DatabaseToCalss
             WriteFile(path, sb.ToString());
             return sb.ToString();
         }
+
+        private string ToRequesrExtention(string ns, List<string> names)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(@"using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
+using Pan.Code.Extentions;
+using Pan.Code.UserException;\n");
+            sb.Append("\n");
+            sb.AppendFormat("namespace {0}.API.Extentions", ns);
+            sb.Append(@"{
+    public static class RequesrExtention
+    {
+        public static LoginUserModel GetLoginUser(this ControllerBase controller)
+        {
+            try
+            {
+                var token = controller.Request.Headers[Constant.LoginToken_Key].ToString();
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    var temp = new JwtSecurityTokenHandler().ReadJwtToken(token.Replace(Constant.JwtTokenPrefix, ""));
+                    if (temp != null && temp.Claims != null && temp.Claims.Count() > 0)
+                    {
+                        return temp.Claims.FirstOrDefault().Value.ToModel<LoginUserModel>();
+                    }
+                }
+            }
+            catch
+            {
+            }
+            throw new NotLoginException();
+        }");
+            sb.Append(@"
+    }
+}");
+            sb.Append("\n");
+            var path = string.Format("{0}/{1}/{1}.API/Extentions/RequesrExtention.cs", BasePath, ns);
+            WriteFile(path, sb.ToString());
+            return sb.ToString();
+        }
+
         #endregion
         #region Controllers
 
@@ -457,38 +501,26 @@ namespace DatabaseToCalss
             sb.Append("using System.Linq;\n");
             sb.Append("using System.Threading.Tasks;\n");
             sb.Append("using Microsoft.AspNetCore.Mvc;\n");
+            sb.Append("using Pan.Code.Common;\n");
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API.Controllers\n", ns);
             sb.Append("{\n");
-            sb.Append("    [Route(\"api/[controller]\")]\n");
+            sb.Append("    [Route(\"api/[controller]/[action]\")]\n");
             sb.Append("    [ApiController]\n");
             sb.Append("    public class ValuesController : ControllerBase\n");
             sb.Append("    {\n");
+
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// 获取验证码\n");
+            sb.Append("        /// </summary>\n");
             sb.Append("        [HttpGet]\n");
-            sb.Append("        public ActionResult<IEnumerable<string>> Get()\n");
+            sb.Append("        public FileResult GetValidateCode()\n");
             sb.Append("        {\n");
-            sb.Append("            return new string[] { \"value1\", \"value2\" };\n");
-            sb.Append("        }\n");
-            sb.Append("\n");
-            sb.Append("        [HttpGet(\"{id}\")]\n");
-            sb.Append("        public ActionResult<string> Get(int id)\n");
-            sb.Append("        {\n");
-            sb.Append("            return \"value\";\n");
-            sb.Append("        }\n");
-            sb.Append("\n");
-            sb.Append("        [HttpPost]\n");
-            sb.Append("        public void Post([FromBody] string value)\n");
-            sb.Append("        {\n");
-            sb.Append("        }\n");
-            sb.Append("\n");
-            sb.Append("        [HttpPut(\"{id}\")]\n");
-            sb.Append("        public void Put(int id, [FromBody] string value)\n");
-            sb.Append("        {\n");
-            sb.Append("        }\n");
-            sb.Append("\n");
-            sb.Append("        [HttpDelete(\"{id}\")]\n");
-            sb.Append("        public void Delete(int id)\n");
-            sb.Append("        {\n");
+
+            sb.Append("            byte[] imageFile = VerificationCodeImage.CreateImage(out string code);\n");
+            sb.Append("            HttpContext.Session.Set(Constant.Session_CheckCode, Encoding.UTF8.GetBytes(code));\n");
+            sb.Append("            return File(imageFile, \"image/gif\");\n");
+
             sb.Append("        }\n");
             sb.Append("\n");
 
@@ -498,23 +530,30 @@ namespace DatabaseToCalss
             sb.Append("        [AllowAnonymous]\n");
             sb.Append("        [HttpPost]\n");
             sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<string>))]\n");
-            sb.Append("       public ActionResult<object> Login([FromBody]LoginModel model)\n");
+            sb.Append("       public ActionResult<object> Login([FromBody]LoginVM model)\n");
             sb.Append("        {\n");
+            sb.Append("            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(HttpContext.Session.GetString(Constant.Session_CheckCode)) || !code.ToLower().Equals(HttpContext.Session.GetString(Constant.Session_CheckCode).ToLower()))\n");
+            sb.Append("            {\n");
+            sb.Append("                return this.ResponseUnknown(\"验证码错误\");\n");
+            sb.Append("            }\n");
             sb.Append("            Object user = null;\n");
-            sb.Append("            //user = this._repository.GetUserByAccount(model.UserAccount);\n");
+            sb.Append("            //user = this._repository.GetUserByAccount(model.Account);\n");
             sb.Append("            //if (user == null || !model.Password.Equals(user.Password))\n");
             sb.Append("            //{\n");
             sb.Append("                //{model.ResponseNotLogin(\"登录失败\");\n");
             sb.Append("            //}\n");
+            sb.Append("            LoginUserModel loginUser = new LoginUserModel();\n");
+            sb.Append("            loginUser.UserID = \"1\";\n");
+            sb.Append("            loginUser.UserName = \"admin\";\n");
 
             sb.Append("            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this._configuration[\"JWT: SecurityKey\"]));\n");
             sb.Append("            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);\n");
-            sb.Append("            var claims = new[] {new Claim(ClaimTypes.Name,user.ToJson())};\n");
+            sb.Append("            var claims = new[] {new Claim(ClaimTypes.Name,loginUser.ToJson())};\n");
             sb.Append("            var authTime = DateTime.UtcNow;\n");
-            sb.Append("            var expiresAt = authTime.AddDays(7);\n");
+            sb.Append("            var expiresAt = authTime.AddDays(1);\n");
             sb.Append("            var token = new JwtSecurityToken(issuer: \"*\", audience: \"*\", claims: claims, expires: expiresAt, signingCredentials: creds);\n");
-            sb.Append("            HttpContext.Session.SetString(token, user.ToJson());\n");
-            sb.Append("            return login.ResponseSuccess();\n");
+            sb.Append("            loginUser.token = Constant.JwtTokenPrefix + new JwtSecurityTokenHandler().WriteToken(token);\n");
+            sb.Append("            return loginUser.ResponseSuccess();\n");
 
             sb.Append("        }\n");
 
@@ -641,7 +680,7 @@ namespace DatabaseToCalss
             var setlist = list.Select(s => "<%=," + s.column_name + "=@@" + s.column_name + "@@%>").ToList();
             setlist.RemoveAt(0);
             var wherelist = list.Select(s => "<%= AND " + s.column_name + "=@@" + s.column_name + "@@%>");
-            var firstWherelist = list.Select(s => s.column_name + "=@@" + s.column_name + "@@%").FirstOrDefault();
+            var firstWherelist = list.Select(s => s.column_name + "=@@" + s.column_name + "@@").FirstOrDefault();
             sb.Append("<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n");
             sb.Append("<SqlSetting>\n");
             #region Insert
@@ -661,7 +700,7 @@ namespace DatabaseToCalss
             sb.Append("        <SqlDefinition type=\"MySql\" ConnStringName=\"backstage_connection\">\n");
             sb.Append("            <SqlCommand>\n");
             sb.Append("                <![CDATA[\n");
-            sb.AppendFormat("                UPDATE {0} SET {1} {2} WHERE {3};\n", name, firstWherelist, string.Join(",", setlist), firstWherelist);
+            sb.AppendFormat("                UPDATE {0} SET {1} {2} WHERE {3};\n", name, firstWherelist, string.Join("", setlist), firstWherelist);
             sb.Append("                ]]>\n");
             sb.Append("            </SqlCommand>\n");
             sb.Append("        </SqlDefinition>\n");
@@ -954,6 +993,27 @@ namespace DatabaseToCalss
             return sb.ToString();
         }
 
+
+        private string ToConstant(string ns)
+        {
+            StringBuilder sb = GetCsprojectStart();
+            sb.AppendFormat("namespace {0}.Entity\n", ns);
+            sb.Append("{\n");
+            sb.Append("    public class Constant\n");
+            sb.Append("    {\n");
+            sb.Append("        public const string LoginToken_Key = \"Authorization\";\n");
+            sb.Append("        public const string JwtTokenPrefix = \"Bearer\";\n");
+            sb.Append("         /// <summary>\n");
+            sb.Append("         /// 验证码session名称\n");
+            sb.Append("         /// </summary>\n");
+            sb.Append("        public const string Session_CheckCode = \"Session_CheckCode\";\n");
+            sb.Append("{\n");
+            sb.Append("    }\n");
+            sb.Append("}\n");
+            var path = string.Format("{0}/{1}/{1}.Entity/Constant.cs", BasePath, ns);
+            WriteFile(path, sb.ToString());
+            return sb.ToString();
+        }
         private string ToEntityCsproject(string ns)
         {
             StringBuilder sb = GetCsprojectStart();
@@ -969,6 +1029,8 @@ namespace DatabaseToCalss
             WriteFile(path, sb.ToString());
             return sb.ToString();
         }
+
+
         #endregion
 
         #region IRepository

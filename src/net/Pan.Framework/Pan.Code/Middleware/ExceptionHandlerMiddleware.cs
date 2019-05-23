@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Pan.Code.Extentions;
+using Pan.Code.UserException;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using static Pan.Code.EnumType;
 
 namespace Pan.Code.Middleware
 {
@@ -43,15 +46,23 @@ namespace Pan.Code.Middleware
 
         private static async Task WriteExceptionAsync(HttpContext context, Exception e)
         {
+            ApiResult<string> apiResult = null;
             if (e is UnauthorizedAccessException)
-                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            else if (e is Exception)
-                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            {
+                apiResult = e.ResponseUnauthorized();
+            }
+            else if (e is NotLoginException)
+            {
+                apiResult = e.ResponseNotLogin();
+            }
+            else
+            {
+                apiResult = e.ResponseUnknown();
+            }
 
             context.Response.ContentType = "application/json";
 
-            await context.Response.WriteAsync(
-                JsonConvert.SerializeObject(e)).ConfigureAwait(false);
+            await context.Response.WriteAsync(apiResult.ToJson()).ConfigureAwait(false);
         }
 
     }
