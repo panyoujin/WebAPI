@@ -1,4 +1,5 @@
 using System;
+using Pan.Code.Cache;
 using Xunit;
 
 namespace Pan.Test
@@ -8,7 +9,9 @@ namespace Pan.Test
         [Fact]
         public void Test1()
         {
-
+            CacheFactory.CacheInstance.Add("a_1", "123");
+            CacheFactory.CacheInstance.Add("a_2", "456");
+            CacheFactory.CacheInstance.RemovePrefix("a");
         }
     }
 }

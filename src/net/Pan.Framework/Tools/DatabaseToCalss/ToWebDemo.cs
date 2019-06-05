@@ -13,8 +13,8 @@ namespace DatabaseToCalss
         string BasePath = "D:/ToDemo";
         string TargetFramework = "netcoreapp2.2";
         string LangVersion = "7.3";
-        string PanCodeVersion = "1.0.1";
-        string CoreDBHelperVersion = "1.0.3";
+        string PanCodeVersion = "1.0.3";
+        string CoreDBHelperVersion = "1.0.4";
 
         List<string> udList = new List<string>() { "Update_Time", "Update_UserId", "Update_User" };
         List<string> crList = new List<string>() { "Create_Time", "Create_UserId", "Create_User" };
@@ -294,7 +294,6 @@ namespace DatabaseToCalss
             sb.Append("                    Type = \"string\",\n");
             sb.Append("                    Required = isAuthorize //是否必选\n");
             sb.Append(@"                });
-                }
             }
         }
     }
@@ -343,10 +342,17 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Pan.Code.Extentions;
-using Pan.Code.UserException;\n");
+using Pan.Code.Models.ApiModel;
+using Pan.Code.UserException;");
+            sb.Append("\n");
+            sb.AppendFormat("using {0}.Entity;\n", ns);
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API.Extentions", ns);
-            sb.Append(@"{
+            sb.Append(@"
+{
+    /// <summary>
+    /// 
+    /// </summary>
     public static class RequesrExtention
     {
         public static LoginUserModel GetLoginUser(this ControllerBase controller)
@@ -355,8 +361,10 @@ using Pan.Code.UserException;\n");
             {
                 var token = controller.Request.Headers[Constant.LoginToken_Key].ToString();
                 if (!string.IsNullOrWhiteSpace(token))
-                {
-                    var temp = new JwtSecurityTokenHandler().ReadJwtToken(token.Replace(Constant.JwtTokenPrefix, ""));
+                {");
+            sb.Append("\n");
+            sb.Append("                    var temp = new JwtSecurityTokenHandler().ReadJwtToken(token.Replace(Constant.JwtTokenPrefix, \"\"));\n");
+            sb.Append(@"
                     if (temp != null && temp.Claims != null && temp.Claims.Count() > 0)
                     {
                         return temp.Claims.FirstOrDefault().Value.ToModel<LoginUserModel>();
@@ -394,7 +402,7 @@ using Pan.Code.UserException;\n");
             sb.AppendFormat("using {0}.Entity;\n", ns);
             sb.AppendFormat("using {0}.IRepository;\n", ns);
             sb.AppendFormat("using Microsoft.AspNetCore.Authorization;\n", ns);
-            sb.AppendFormat("using Hoshino.API.ViewModels;\n", ns);
+            sb.AppendFormat("using {0}.API.ViewModels;\n", ns);
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API.Controllers\n", ns);
             sb.Append("{\n");
@@ -466,7 +474,7 @@ using Pan.Code.UserException;\n");
             sb.AppendFormat("        [ProducesResponseType(200, Type = typeof(ApiResult<{0}_Entity>))]\n", name);
             sb.AppendFormat("        public ActionResult<object> Get({0} {1})\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
-            sb.AppendFormat("            return this._repository.Get({0}).ResponseSuccess();\n", firstColumn.column_name);
+            sb.AppendFormat("            return this._repository.Get<{0}_Entity>({1}).ResponseSuccess();\n", name, firstColumn.column_name);
             sb.Append("        }\n\n");
             #endregion Select
 
@@ -475,12 +483,11 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
             sb.Append("        /// </summary>\n");
-            sb.Append("        [HttpPost]\n");
+            sb.Append("        [HttpGet]\n");
             sb.AppendFormat("        [ProducesResponseType(200, Type = typeof(ApiResult<List<{0}_Entity>>))]\n", name);
-            sb.AppendFormat("        public ActionResult<object> GetList([FromBody]{0}VM model,int pageindex,int pagesize)\n", name);
+            sb.AppendFormat("        public ActionResult<object> GetList(int pageindex,int pagesize)\n", name);
             sb.Append("        {\n");
-            sb.AppendFormat("            {0}_Entity entity = model.ConvertToT<{0}_Entity>();\n", name);
-            sb.Append("            var (list,total) = this._repository.GetList(entity, pageindex, pagesize) ;\n");
+            sb.AppendFormat("            var (list,total) = this._repository.GetList<{0}_Entity>(pageindex, pagesize) ;\n", name);
             sb.Append("            return list.ResponseSuccess(\"\",total);\n");
             sb.Append("        }\n\n");
             #endregion SelectList
@@ -497,11 +504,23 @@ using Pan.Code.UserException;\n");
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("using System;\n");
+            sb.Append("using System.Text;\n");
+            sb.Append("using System.IdentityModel.Tokens.Jwt;\n");
+            sb.Append("using System.Security.Claims;\n");
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("using System.Linq;\n");
             sb.Append("using System.Threading.Tasks;\n");
+            sb.Append("using Microsoft.AspNetCore.Http;\n");
             sb.Append("using Microsoft.AspNetCore.Mvc;\n");
+            sb.Append("using Microsoft.Extensions.Configuration;\n");
+            sb.Append("using Microsoft.Extensions.Logging;\n");
+            sb.Append("using Microsoft.IdentityModel.Tokens;\n");
+            sb.Append("using Pan.Code;\n");
             sb.Append("using Pan.Code.Common;\n");
+            sb.Append("using Pan.Code.Extentions;\n");
+            sb.Append("using Pan.Code.Models.ApiModel;\n");
+            sb.AppendFormat("using {0}.Entity;\n", ns);
+            sb.AppendFormat("using {0}.API.ViewModels;\n", ns);
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API.Controllers\n", ns);
             sb.Append("{\n");
@@ -509,6 +528,19 @@ using Pan.Code.UserException;\n");
             sb.Append("    [ApiController]\n");
             sb.Append("    public class ValuesController : ControllerBase\n");
             sb.Append("    {\n");
+            sb.Append("        private readonly ILogger<ValuesController> _logger;\n");
+            sb.Append("        private readonly IConfiguration _configuration;\n");
+
+            sb.Append("        /// <summary>\n");
+            sb.Append("        /// \n");
+            sb.Append("        /// </summary>\n");
+            sb.Append("        public ValuesController(ILogger<ValuesController> logger, IConfiguration configuration)\n");
+            sb.Append("        {\n");
+            sb.Append("            this._logger = logger;\n");
+            sb.Append("            this._configuration = configuration;\n");
+            sb.Append("        }\n");
+            sb.Append("\n");
+
 
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取验证码\n");
@@ -527,12 +559,11 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 登录接口\n");
             sb.Append("        /// </summary>\n");
-            sb.Append("        [AllowAnonymous]\n");
             sb.Append("        [HttpPost]\n");
             sb.Append("        [ProducesResponseType(200, Type = typeof(ApiResult<string>))]\n");
             sb.Append("       public ActionResult<object> Login([FromBody]LoginVM model)\n");
             sb.Append("        {\n");
-            sb.Append("            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(HttpContext.Session.GetString(Constant.Session_CheckCode)) || !code.ToLower().Equals(HttpContext.Session.GetString(Constant.Session_CheckCode).ToLower()))\n");
+            sb.Append("            if (string.IsNullOrWhiteSpace(model.VerificationCode) || string.IsNullOrWhiteSpace(HttpContext.Session.GetString(Constant.Session_CheckCode)) || !model.VerificationCode.ToLower().Equals(HttpContext.Session.GetString(Constant.Session_CheckCode).ToLower()))\n");
             sb.Append("            {\n");
             sb.Append("                return this.ResponseUnknown(\"验证码错误\");\n");
             sb.Append("            }\n");
@@ -552,7 +583,7 @@ using Pan.Code.UserException;\n");
             sb.Append("            var authTime = DateTime.UtcNow;\n");
             sb.Append("            var expiresAt = authTime.AddDays(1);\n");
             sb.Append("            var token = new JwtSecurityToken(issuer: \"*\", audience: \"*\", claims: claims, expires: expiresAt, signingCredentials: creds);\n");
-            sb.Append("            loginUser.token = Constant.JwtTokenPrefix + new JwtSecurityTokenHandler().WriteToken(token);\n");
+            sb.Append("            loginUser.Token = Constant.JwtTokenPrefix + new JwtSecurityTokenHandler().WriteToken(token);\n");
             sb.Append("            return loginUser.ResponseSuccess();\n");
 
             sb.Append("        }\n");
@@ -777,9 +808,9 @@ using Pan.Code.UserException;\n");
         private string ToLaunchSettings(string ns)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("{\"iisSettings\":{\"windowsAuthentication\":false,\"anonymousAuthentication\":true,\"iisExpress\":{\"applicationUrl\":\"http://localhost:60737\"}},\"$schema\":\"http://json.schemastore.org/launchsettings.json\",\"profiles\":{\"IIS Express\":{\"commandName\":\"IISExpress\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"}},\"");
+            sb.Append("{\"iisSettings\":{\"windowsAuthentication\":false,\"anonymousAuthentication\":true,\"iisExpress\":{\"applicationUrl\":\"http://localhost:60737\"}},\"$schema\":\"http://json.schemastore.org/launchsettings.json\",\"profiles\":{\"IIS Express\":{\"commandName\":\"IISExpress\",\"launchBrowser\":true,\"launchUrl\":\"swagger/index.html\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"}},\"");
             sb.Append(ns);
-            sb.Append(".API\":{\"commandName\":\"Project\",\"launchBrowser\":true,\"launchUrl\":\"api/values\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"},\"applicationUrl\":\"http://localhost:5000\"},\"Docker\":{\"commandName\":\"Docker\",\"launchBrowser\":true,\"launchUrl\":\"{Scheme}://{ServiceHost}:{ServicePort}/api/values\"}}}\n");
+            sb.Append(".API\":{\"commandName\":\"Project\",\"launchBrowser\":true,\"launchUrl\":\"swagger/index.html\",\"environmentVariables\":{\"ASPNETCORE_ENVIRONMENT\":\"Development\"},\"applicationUrl\":\"http://localhost:5000\"},\"Docker\":{\"commandName\":\"Docker\",\"launchBrowser\":true,\"launchUrl\":\"{Scheme}://{ServiceHost}:{ServicePort}/api/values\"}}}\n");
             var path = string.Format("{0}/{1}/{1}.API/Properties/launchSettings.json", BasePath, ns);
             WriteFile(path, sb.ToString());
             return sb.ToString();
@@ -850,7 +881,7 @@ using Pan.Code.UserException;\n");
             sb.Append("using Microsoft.AspNetCore.Authentication.JwtBearer;\n");
             sb.Append("using Microsoft.IdentityModel.Tokens;\n");
             sb.Append("using System.Text;\n");
-            sb.Append("using Hoshino.API.Filters;\n");
+            sb.AppendFormat("using {0}.API.Filters;\n", ns);
             sb.Append("\n");
             sb.AppendFormat("namespace {0}.API\n", ns);
             sb.Append("{\n");
@@ -870,10 +901,13 @@ using Pan.Code.UserException;\n");
             sb.Append("            {\n");
             sb.Append("                DBHelper.SQLHelper.SQLHelperFactory.Instance.ConnectionStringsDic[con] = Configuration.GetConnectionString(con);\n");
             sb.Append("            }\n");
+            sb.Append("            services.AddCors();\n");
+            sb.Append("            services.AddSession();\n");
             sb.Append("            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)\n                .AddJwtBearer(options =>\n                {\n                    options.TokenValidationParameters = new TokenValidationParameters\n                    {\n                        ValidateIssuer = true,\n                        ValidateAudience = true,\n                        ValidateLifetime = true,\n                        ValidateIssuerSigningKey = true,\n                        ValidIssuer = \"*\",\n                        ValidAudience = \"*\",\n                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration[\"JWT:SecurityKey\"]))\n                    };\n                });\n");
             sb.Append("            services.AddMvc(config =>{}).AddJsonOptions(options =>\n            {\n                options.SerializerSettings.ContractResolver = new DefaultContractResolver();//设置时间格式\n                 options.SerializerSettings.DateFormatString = \"yyyy-MM-dd HH:mm:ss\";\n            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);\n");
             sb.Append("            services.RegisDependency();\n");
-            sb.Append("            services.AddSwaggerGen(c =>{c.SwaggerDoc(\"v1\", new Info { Title = \"My API\", Version = \"v1\" });});\n                c.OperationFilter<AddAuthTokenHeaderParameter>();\n                // 为 Swagger JSON and UI设置xml文档注释路径\n                var basePath = Path.GetDirectoryName(typeof(Program).Assembly.Location);//获取应用程序所在目录（绝对，不受工作目录影响，建议采用此方法获取路径）\n                var xmlPath = Path.Combine(basePath, \"SwaggerDemo.xml\");\n                c.IncludeXmlComments(xmlPath);\n");
+            sb.Append("            services.AddSwaggerGen(c =>{c.SwaggerDoc(\"v1\", new Info { Title = \"My API\", Version = \"v1\" });\n                c.OperationFilter<AddAuthTokenHeaderParameter>();\n                // 为 Swagger JSON and UI设置xml文档注释路径\n                var basePath = Path.GetDirectoryName(typeof(Program).Assembly.Location);//获取应用程序所在目录（绝对，不受工作目录影响，建议采用此方法获取路径）\n                var xmlPath = Path.Combine(basePath, \"SwaggerDemo.xml\");\n                c.IncludeXmlComments(xmlPath);\n");
+            sb.Append("            });\n");
             sb.Append("        }\n");
             sb.Append("\n");
             sb.Append("        public void Configure(IApplicationBuilder app, IHostingEnvironment env)\n");
@@ -996,7 +1030,7 @@ using Pan.Code.UserException;\n");
 
         private string ToConstant(string ns)
         {
-            StringBuilder sb = GetCsprojectStart();
+            StringBuilder sb = new StringBuilder();
             sb.AppendFormat("namespace {0}.Entity\n", ns);
             sb.Append("{\n");
             sb.Append("    public class Constant\n");
@@ -1007,7 +1041,6 @@ using Pan.Code.UserException;\n");
             sb.Append("         /// 验证码session名称\n");
             sb.Append("         /// </summary>\n");
             sb.Append("        public const string Session_CheckCode = \"Session_CheckCode\";\n");
-            sb.Append("{\n");
             sb.Append("    }\n");
             sb.Append("}\n");
             var path = string.Format("{0}/{1}/{1}.Entity/Constant.cs", BasePath, ns);
@@ -1076,7 +1109,7 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取单个\n");
             sb.Append("        /// </summary>\n");
-            sb.AppendFormat("        {0}_Entity Get({1} {2});\n", name, ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
+            sb.AppendFormat("        T Get<T>({1} {2});\n", name, ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("\n");
             #endregion Select
 
@@ -1084,7 +1117,7 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
             sb.Append("        /// </summary>\n");
-            sb.AppendFormat("        (IEnumerable<{0}_Entity>,int) GetList({0}_Entity model,int pageindex,int pagesize);\n", name);
+            sb.AppendFormat("        (IEnumerable<T>,int) GetList<T>(int pageindex,int pagesize);\n", name);
             sb.Append("\n");
             #endregion SelectList
 
@@ -1244,11 +1277,11 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取单个\n");
             sb.Append("        /// </summary>\n");
-            sb.AppendFormat("        public {0}_Entity Get({1} {2})\n", name, ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
+            sb.AppendFormat("        public T Get<T>({0} {1})\n", ConvrtType(firstColumn.data_type, firstColumn.is_nullable), firstColumn.column_name);
             sb.Append("        {\n");
             sb.Append("            Dictionary<string, object> dic = new Dictionary<string, object>();\n");
             sb.AppendFormat("            dic[\"{0}\"] = {0};\n", firstColumn.column_name);
-            sb.AppendFormat("            return SQLHelperFactory.Instance.QueryForObjectByT<{0}_Entity>(\"Select_{0}\", dic);\n", name);
+            sb.AppendFormat("            return SQLHelperFactory.Instance.QueryForObjectByT<T>(\"Select_{0}\", dic);\n", name);
             sb.Append("        }\n\n");
             #endregion Select
 
@@ -1256,18 +1289,17 @@ using Pan.Code.UserException;\n");
             sb.Append("        /// <summary>\n");
             sb.Append("        /// 获取列表\n");
             sb.Append("        /// </summary>\n");
-            sb.AppendFormat("        public (IEnumerable<{0}_Entity>,int) GetList({0}_Entity model,int pageindex,int pagesize)\n", name);
+            sb.Append("        public (IEnumerable<T>,int) GetList<T>(int pageindex,int pagesize)\n");
             sb.Append("        {\n");
-            sb.Append(list_dicsb);
             sb.Append("            if (pageindex >= 0)\n");
             sb.Append("            {\n");
-            sb.Append("                dic[\"StartIndex\"] = pageindex == 0 ? 0 : (pageindex - 1) * pagesize + 1;;\n");
+            sb.Append("                dic[\"StartIndex\"] = pageindex <= 1 ? 0 : (pageindex - 1) * pagesize;\n");
             sb.Append("            }\n");
             sb.Append("            if (pagesize > 0)\n");
             sb.Append("            {\n");
             sb.Append("                dic[\"SelectCount\"] = pagesize;\n");
             sb.Append("            }\n");
-            sb.AppendFormat("            var list = SQLHelperFactory.Instance.QueryMultipleByPage<{0}_Entity>(\"Select_{0}_List\", dic,out int total);\n", name);
+            sb.AppendFormat("            var list = SQLHelperFactory.Instance.QueryMultipleByPage<T>(\"Select_{0}_List\", dic,out int total);\n", name);
             sb.Append("            return (list,total);\n");
             sb.Append("        }\n\n");
             #endregion SelectList

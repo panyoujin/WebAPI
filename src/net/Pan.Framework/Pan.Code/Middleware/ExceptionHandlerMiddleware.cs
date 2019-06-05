@@ -32,7 +32,8 @@ namespace Pan.Code.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError("UserExceptionHandlerMiddleware", ex);
+                _logger.LogError("UserExceptionHandlerMiddleware" + ex.Message);
+                _logger.LogError(ex, "UserExceptionHandlerMiddleware");
                 await HandleExceptionAsync(context, ex);
             }
         }

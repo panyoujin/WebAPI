@@ -57,5 +57,11 @@ namespace Pan.Code
             Yes = 1,
 
         }
+
+        public enum CacheTypeEnum
+        {
+            Local=0,
+            Session=1
+        }
     }
 }
