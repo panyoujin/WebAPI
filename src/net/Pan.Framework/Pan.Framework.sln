@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{261ECCE2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseToCalss", "Tools\DatabaseToCalss\DatabaseToCalss.csproj", "{504291AC-1FE7-4A94-8AA3-6BA6A92A8150}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateSql", "Tools\GenerateSql\GenerateSql.csproj", "{2C335AEE-EAEB-4F29-9DE0-211C4A59C478}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,10 @@ Global
 		{504291AC-1FE7-4A94-8AA3-6BA6A92A8150}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{504291AC-1FE7-4A94-8AA3-6BA6A92A8150}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{504291AC-1FE7-4A94-8AA3-6BA6A92A8150}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C335AEE-EAEB-4F29-9DE0-211C4A59C478}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C335AEE-EAEB-4F29-9DE0-211C4A59C478}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C335AEE-EAEB-4F29-9DE0-211C4A59C478}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C335AEE-EAEB-4F29-9DE0-211C4A59C478}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +69,7 @@ Global
 		{E89AFB2B-D151-450F-9417-4A750A2FF925} = {08ABB561-2C27-4B0B-B0DD-A17D07C1B905}
 		{1273EA87-FAFA-479D-AE25-094F7CC00096} = {08ABB561-2C27-4B0B-B0DD-A17D07C1B905}
 		{504291AC-1FE7-4A94-8AA3-6BA6A92A8150} = {261ECCE2-4B40-486B-9BE0-E67D92B6F62E}
+		{2C335AEE-EAEB-4F29-9DE0-211C4A59C478} = {261ECCE2-4B40-486B-9BE0-E67D92B6F62E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4CE67C3C-1386-4F34-98B9-D6D7F65F75BC}

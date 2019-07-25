@@ -34,6 +34,7 @@
             this.cb_all = new System.Windows.Forms.CheckBox();
             this.txt_namespace = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.cb_su = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // clb_tablelist
@@ -51,9 +52,9 @@
             this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox1.Location = new System.Drawing.Point(255, 48);
+            this.richTextBox1.Location = new System.Drawing.Point(367, 48);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(533, 596);
+            this.richTextBox1.Size = new System.Drawing.Size(421, 596);
             this.richTextBox1.TabIndex = 2;
             this.richTextBox1.Text = "";
             // 
@@ -98,11 +99,23 @@
             this.label3.TabIndex = 6;
             this.label3.Text = "命名空间:";
             // 
+            // cb_su
+            // 
+            this.cb_su.AutoSize = true;
+            this.cb_su.Font = new System.Drawing.Font("宋体", 15F);
+            this.cb_su.Location = new System.Drawing.Point(259, 73);
+            this.cb_su.Name = "cb_su";
+            this.cb_su.Size = new System.Drawing.Size(108, 24);
+            this.cb_su.TabIndex = 7;
+            this.cb_su.Text = "解决方案";
+            this.cb_su.UseVisualStyleBackColor = true;
+            // 
             // Tables
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 651);
+            this.Controls.Add(this.cb_su);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.txt_namespace);
             this.Controls.Add(this.cb_all);
@@ -126,6 +139,7 @@
         private System.Windows.Forms.CheckBox cb_all;
         private System.Windows.Forms.TextBox txt_namespace;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.CheckBox cb_su;
     }
 }
 
