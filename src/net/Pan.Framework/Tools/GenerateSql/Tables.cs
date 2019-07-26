@@ -5,25 +5,33 @@ namespace GenerateSql
 {
     public partial class Tables : Form
     {
-        public Action<string> SelectTableAction;
-        public Tables()
+        public string TableName;
+        public string JoinType;
+
+        public Tables(int index)
         {
             InitializeComponent();
-            this.clb_tablelist.DataSource = StaticValue.TableList;
+            if (index == 0)
+            {
+                cbbJoinList.Enabled = false;
+            }
+            else
+            {
+                cbbJoinList.SelectedIndex = 0;
+            }
+            cbbTableList.DataSource = StaticValue.TableList;
         }
 
-        private void clb_tablelist_SelectedIndexChanged(object sender, EventArgs e)
+        private void btnQD_Click(object sender, EventArgs e)
         {
-            for (var i = 0; i < this.clb_tablelist.Items.Count; i++)
-            {
-                if (!this.clb_tablelist.GetItemChecked(i))
-                {
-                    continue;
-                }
-                var name = this.clb_tablelist.Items[i].ToString();
-                this.Close();
-                SelectTableAction?.Invoke(name);
-            }
+            JoinType = cbbJoinList.Text;
+            TableName = cbbTableList.Text;
+            this.Close();
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

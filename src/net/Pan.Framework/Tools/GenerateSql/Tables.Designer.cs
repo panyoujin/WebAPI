@@ -28,28 +28,79 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.clb_tablelist = new System.Windows.Forms.CheckedListBox();
+            this.btnQD = new System.Windows.Forms.Button();
+            this.cbbTableList = new System.Windows.Forms.ComboBox();
+            this.cbbJoinList = new System.Windows.Forms.ComboBox();
+            this.btnClose = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // clb_tablelist
+            // btnQD
             // 
-            this.clb_tablelist.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.btnQD.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.clb_tablelist.FormattingEnabled = true;
-            this.clb_tablelist.Location = new System.Drawing.Point(12, 16);
-            this.clb_tablelist.Name = "clb_tablelist";
-            this.clb_tablelist.Size = new System.Drawing.Size(314, 388);
-            this.clb_tablelist.TabIndex = 1;
-            this.clb_tablelist.SelectedIndexChanged += new System.EventHandler(this.clb_tablelist_SelectedIndexChanged);
+            this.btnQD.Font = new System.Drawing.Font("宋体", 15F);
+            this.btnQD.Location = new System.Drawing.Point(52, 176);
+            this.btnQD.Name = "btnQD";
+            this.btnQD.Size = new System.Drawing.Size(170, 39);
+            this.btnQD.TabIndex = 2;
+            this.btnQD.Text = "确定";
+            this.btnQD.UseVisualStyleBackColor = true;
+            this.btnQD.Click += new System.EventHandler(this.btnQD_Click);
+            // 
+            // cbbTableList
+            // 
+            this.cbbTableList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cbbTableList.Font = new System.Drawing.Font("宋体", 20F);
+            this.cbbTableList.FormattingEnabled = true;
+            this.cbbTableList.Items.AddRange(new object[] {
+            "LEFT JOIN",
+            "RIGHT JOIN",
+            "JOIN"});
+            this.cbbTableList.Location = new System.Drawing.Point(52, 105);
+            this.cbbTableList.Name = "cbbTableList";
+            this.cbbTableList.Size = new System.Drawing.Size(420, 35);
+            this.cbbTableList.TabIndex = 3;
+            // 
+            // cbbJoinList
+            // 
+            this.cbbJoinList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cbbJoinList.Font = new System.Drawing.Font("宋体", 20F);
+            this.cbbJoinList.FormattingEnabled = true;
+            this.cbbJoinList.Items.AddRange(new object[] {
+            "LEFT JOIN",
+            "RIGHT JOIN",
+            "JOIN"});
+            this.cbbJoinList.Location = new System.Drawing.Point(52, 37);
+            this.cbbJoinList.Name = "cbbJoinList";
+            this.cbbJoinList.Size = new System.Drawing.Size(420, 35);
+            this.cbbJoinList.TabIndex = 4;
+            // 
+            // btnClose
+            // 
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.Font = new System.Drawing.Font("宋体", 15F);
+            this.btnClose.Location = new System.Drawing.Point(302, 176);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(170, 39);
+            this.btnClose.TabIndex = 5;
+            this.btnClose.Text = "结束";
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // Tables
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(338, 419);
-            this.Controls.Add(this.clb_tablelist);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.ClientSize = new System.Drawing.Size(539, 238);
+            this.ControlBox = false;
+            this.Controls.Add(this.btnClose);
+            this.Controls.Add(this.cbbJoinList);
+            this.Controls.Add(this.cbbTableList);
+            this.Controls.Add(this.btnQD);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "Tables";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "选择表";
@@ -58,8 +109,10 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.CheckedListBox clb_tablelist;
+        private System.Windows.Forms.Button btnQD;
+        private System.Windows.Forms.ComboBox cbbTableList;
+        private System.Windows.Forms.ComboBox cbbJoinList;
+        private System.Windows.Forms.Button btnClose;
     }
 }
 

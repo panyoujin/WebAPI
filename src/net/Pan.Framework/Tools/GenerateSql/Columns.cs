@@ -7,7 +7,7 @@ namespace GenerateSql
 {
     public partial class Columns : Form
     {
-        public Action<List<String>> SelectColumnsAction;
+        public List<String> ColumnsList;
         public Columns(string name)
         {
             InitializeComponent();
@@ -21,7 +21,7 @@ namespace GenerateSql
 
         private void btn_confire_Click(object sender, EventArgs e)
         {
-            List<string> names = new List<string>();
+            ColumnsList = new List<string>();
             for (var i = 0; i < this.clb_ColumnList.Items.Count; i++)
             {
                 if (!this.clb_ColumnList.GetItemChecked(i))
@@ -29,11 +29,10 @@ namespace GenerateSql
                     continue;
                 }
                 var name = this.clb_ColumnList.Items[i] as sys_table_column_model;
-                names.Add(name.column_name);
+                ColumnsList.Add(name.column_name);
             }
             this.Close();
-            SelectColumnsAction?.Invoke(names);
-            
+
         }
 
         private void cb_all_CheckedChanged(object sender, EventArgs e)

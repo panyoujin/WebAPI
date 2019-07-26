@@ -66,6 +66,12 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="FormExtend.cs" />
+    <Compile Include="JoinWhere.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="JoinWhere.Designer.cs">
+      <DependentUpon>JoinWhere.cs</DependentUpon>
+    </Compile>
     <Compile Include="Models\sys_table_column_model.cs" />
     <Compile Include="Models\sys_table_model.cs" />
     <Compile Include="Program.cs" />
@@ -91,6 +97,9 @@
     </Compile>
     <EmbeddedResource Include="Config.resx">
       <DependentUpon>Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="JoinWhere.resx">
+      <DependentUpon>JoinWhere.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

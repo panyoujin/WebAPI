@@ -38,6 +38,7 @@
             this.clb_ColumnList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.clb_ColumnList.Font = new System.Drawing.Font("宋体", 15F);
             this.clb_ColumnList.FormattingEnabled = true;
             this.clb_ColumnList.Location = new System.Drawing.Point(12, 32);
             this.clb_ColumnList.Name = "clb_ColumnList";
